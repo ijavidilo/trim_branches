@@ -92,14 +92,68 @@ git config --global user.email "your.email@company.com"
 
 ## 🛡️ Personal Access Token Setup
 
-### Required permissions:
-- `repo` (full repository access)
-- `workflow` (if using GitHub Actions)
+### 🔑 Required Permissions
 
-### Create PAT:
-1. Go to: **Settings → Developer settings → Personal access tokens → Tokens (classic)**
-2. Select the necessary permissions
-3. Copy the generated token
+The script needs specific permissions to function correctly:
+
+#### ✅ **Essential Permissions (Required):**
+- **`repo`** - Full control of private repositories
+  - ✅ `repo:status` - Access commit status
+  - ✅ `repo_deployment` - Access deployment status  
+  - ✅ `public_repo` - Access public repositories
+  - ✅ `repo:invite` - Access repository invitations
+  - ✅ `security_events` - Read security events
+
+#### 🔧 **What the script does with each permission:**
+- **Clone repository**: Requires `repo` access to download repository content
+- **Create branches**: Needs `repo` write access to push new branches
+- **Create Pull Requests**: Requires `repo` access to use GitHub API
+- **Read user info**: Uses API to validate token (automatic test)
+
+#### 🏢 **For GitHub Enterprise:**
+- Same permissions as GitHub.com
+- Ensure your token has access to the specific organization/repository
+- Verify SSO authorization if required by your organization
+
+### 📝 **Step-by-Step Token Creation:**
+
+#### For GitHub.com:
+1. **Navigate to**: [Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens)
+2. **Click**: "Generate new token (classic)"
+3. **Set expiration**: Choose appropriate duration (30-90 days recommended)
+4. **Select permissions**:
+   ```
+   ☑️ repo (Full control of private repositories)
+   ```
+5. **Generate token** and **copy immediately** (you won't see it again!)
+
+#### For GitHub Enterprise:
+1. **Navigate to**: `https://your-github-enterprise.com/settings/tokens`
+2. **Follow same steps** as GitHub.com
+3. **Additional considerations**:
+   - Check if SSO authorization is required
+   - Verify organization access permissions
+   - Confirm API endpoint accessibility
+
+### 🔒 **Security Best Practices:**
+
+- ✅ **Store securely**: Never commit tokens to repositories
+- ✅ **Use environment variables**: `export GITHUB_TOKEN=your_token`
+- ✅ **Regular rotation**: Regenerate tokens periodically
+- ✅ **Minimum permissions**: Only grant necessary access
+- ✅ **Monitor usage**: Review token activity regularly
+
+### ⚠️ **Token Validation:**
+
+The script automatically tests your token with:
+```bash
+curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
+```
+
+**If you see errors:**
+- `401 Unauthorized`: Token is invalid or expired
+- `403 Forbidden`: Insufficient permissions or rate limiting
+- `404 Not Found`: Repository doesn't exist or no access
 
 ## 📊 Workflow
 
@@ -129,17 +183,92 @@ If the feature branch already exists, it is automatically deleted and recreated.
 
 ## 🐛 Troubleshooting
 
-### Error 404 - Repository not found:
-- Verify the repository URL
-- Confirm access permissions with the PAT
+### 🔐 **Authentication & Permission Errors**
 
-### Error 401/403 - Authentication:
-- Verify that the PAT is valid
-- Confirm token permissions (`repo`)
+#### **Error 401 - Unauthorized**
+```bash
+[ERROR] API connectivity test failed (HTTP 401)
+```
+**Possible causes:**
+- ❌ Token is invalid or expired
+- ❌ Token not properly formatted (missing `ghp_` prefix for classic tokens)
+- ❌ Token was revoked
 
-### Error 422 - Validation Failed:
-- Ensure the `development` branch exists
-- Verify that branches have content
+**Solutions:**
+- ✅ Generate a new token
+- ✅ Verify token format: `ghp_xxxxxxxxxxxxxxxxxxxx`
+- ✅ Check token expiration date
+
+#### **Error 403 - Forbidden**
+```bash
+[ERROR] Authentication failed or insufficient permissions
+```
+**Possible causes:**
+- ❌ Missing `repo` permission on token
+- ❌ SSO not authorized (GitHub Enterprise)
+- ❌ Rate limiting exceeded
+- ❌ Repository access denied
+
+**Solutions:**
+- ✅ Add `repo` permission to token
+- ✅ Authorize SSO if required: Settings → Applications → Authorized OAuth Apps
+- ✅ Wait for rate limit reset (usually 1 hour)
+- ✅ Verify repository access in web interface
+
+#### **Error 404 - Repository Not Found**
+```bash
+[ERROR] Repository not found or API endpoint incorrect  
+```
+**Possible causes:**
+- ❌ Repository URL incorrect
+- ❌ No access to private repository
+- ❌ Organization/repo name changed
+- ❌ Wrong GitHub Enterprise URL
+
+**Solutions:**
+- ✅ Verify repository exists: visit URL in browser
+- ✅ Check repository permissions
+- ✅ Confirm GitHub Enterprise server URL
+- ✅ Verify organization access
+
+### 🔧 **Script Execution Errors**
+
+#### **Error 422 - Validation Failed**
+```bash
+[ERROR] Error creating Pull Request (HTTP 422)
+```
+**Possible causes:**
+- ❌ `development` branch doesn't exist
+- ❌ Trying to create PR with no changes
+- ❌ Invalid branch names
+- ❌ JSON parsing issues
+
+**Solutions:**
+- ✅ Create `development` branch first
+- ✅ Verify branches have different content
+- ✅ Check branch naming conventions
+
+#### **Branch-related Issues**
+```bash
+[INFO] Branch 'development' does not exist in the repository
+```
+**Solution:** Create the development branch:
+```bash
+git checkout -b development
+git push origin development
+```
+
+### 🌐 **GitHub Enterprise Specific Issues**
+
+#### **API Endpoint Problems**
+- ✅ Verify API URL format: `https://your-github-enterprise.com/api/v3/`
+- ✅ Check network connectivity to enterprise server
+- ✅ Confirm API is enabled on your GitHub Enterprise instance
+
+#### **SSO Authorization**
+- ✅ Go to: Settings → Applications → Authorized OAuth Apps
+- ✅ Find your token and click "Grant" next to organization name
+- ✅ Re-run script after authorization
 
 ## 🤝 Contributing
 
