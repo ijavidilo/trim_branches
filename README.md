@@ -4,11 +4,11 @@
 [![Shell Script](https://img.shields.io/badge/Shell-Bash-green.svg)](https://www.gnu.org/software/bash/)
 [![GitHub](https://img.shields.io/badge/GitHub-Enterprise%20Compatible-blue.svg)](https://github.com/enterprise)
 
-> 🚀 **Automated script for synchronizing commits from the main branch (`master`/`main`) to the `development` branch when both are protected using branch protection rules.**
+> 🚀 **Automated script for synchronizing commits from the main branch (`main`/`master`) to the `development` branch when both are protected using branch protection rules.**
 
 ## ⭐ Features
 
-- ✅ **Automatic branch detection** (`master` or `main`)
+- ✅ **Automatic branch detection** (`main` or `master`)
 - ✅ **GitHub.com and GitHub Enterprise support**
 - ✅ **Automatic conflict resolution** with configurable strategies
 - ✅ **Pull Request creation** via GitHub API
@@ -18,9 +18,9 @@
 
 ## 🎯 Objective
 
-This script solves the challenge of synchronizing commits between protected branches (`master`/`main` and `development`) by automatically creating:
+This script solves the challenge of synchronizing commits between protected branches (`main`/`master` and `development`) by automatically creating:
 1. A feature branch from `development`
-2. Merge/rebase of commits from `master`/`main`
+2. Merge/rebase of commits from `main`/`master`
 3. Automatic Pull Request for review and merge
 
 **Perfect for environments where both branches have branch protection rules enabled.**
@@ -65,7 +65,7 @@ git config --global user.email "your.email@company.com"
 
 ### With custom branch:
 ```bash
-./trim_branches.sh https://github.com/team/project.git ghp_xxxxxxxxxxxx feature/sync-master-to-dev
+./trim_branches.sh https://github.com/team/project.git ghp_xxxxxxxxxxxx feature/sync-main-to-dev
 ```
 
 ### With specific Git configuration:
@@ -76,7 +76,7 @@ git config --global user.email "your.email@company.com"
 ## 🔧 Features
 
 ### ✅ Automatic Detection
-- **Main branch**: Automatically detects `main` or `master`
+- **Main branch**: Automatically detects `main` or `master` (prioritizes `main`)
 - **Git configuration**: Uses your global configuration or defaults
 - **Common history**: Handles branches with or without common history
 
@@ -162,8 +162,8 @@ graph TD
     A[Clone Repository] --> B[Detect Main Branch]
     B --> C[Create Feature Branch from Development]
     C --> D{Common History?}
-    D -->|Yes| E[Rebase Master → Feature]
-    D -->|No| F[Merge Master → Feature]
+    D -->|Yes| E[Rebase Main → Feature]
+    D -->|No| F[Merge Main → Feature]
     E --> G[Push Feature Branch]
     F --> G
     G --> H[Create Pull Request]
@@ -173,7 +173,7 @@ graph TD
 ## 🚨 Specific Use Cases
 
 ### Repositories with divergent branches:
-The script automatically detects when `master` and `development` have no common history and uses `--allow-unrelated-histories`.
+The script automatically detects when `main`/`master` and `development` have no common history and uses `--allow-unrelated-histories`.
 
 ### Merge conflicts:
 All conflicts are automatically resolved by prioritizing changes from the main branch.

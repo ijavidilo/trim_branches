@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Git Branch Synchronization Script
-# Script to sync master/main commits onto development branch when both are protected
-# Creates feature branch from development and rebases master/main to maintain coherent history
+# Script to sync main/master commits onto development branch when both are protected
+# Creates feature branch from development and rebases main/master to maintain coherent history
 # 
 # Version: 1.0.0
 # Author: ijavidilo
@@ -13,7 +13,7 @@
 set -e  # Exit on any error
 
 # Script version
-VERSION="1.0.0"
+VERSION="1.1.0"
 
 # Colors for output
 RED='\033[0;31m'
@@ -148,7 +148,7 @@ print_info "Configuring git with user: $GIT_USER_NAME <$GIT_USER_EMAIL>"
 git config user.name "$GIT_USER_NAME"
 git config user.email "$GIT_USER_EMAIL"
 
-# Detect main branch (master or main)
+# Detect main branch (main or master)
 MAIN_BRANCH=""
 if git show-ref --verify --quiet refs/remotes/origin/main; then
     MAIN_BRANCH="main"
@@ -207,7 +207,7 @@ if [[ -z "$MERGE_BASE" ]]; then
     if ! git merge -X theirs "origin/$MAIN_BRANCH" --allow-unrelated-histories -m "Merge $MAIN_BRANCH into $FEATURE_BRANCH (unrelated histories)"; then
         print_warning "Merge failed with conflicts. Attempting to resolve automatically..."
         
-        # Resolve conflicts by accepting all changes from master/main
+        # Resolve conflicts by accepting all changes from main/master
         CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
         
         if [ -n "$CONFLICT_FILES" ]; then
@@ -237,7 +237,7 @@ else
     if ! git rebase -X theirs "origin/$MAIN_BRANCH"; then
         print_warning "Rebase failed with conflicts. Attempting to resolve automatically..."
         
-        # If rebase fails, resolve all conflicts by keeping the incoming changes (from master/main)
+        # If rebase fails, resolve all conflicts by keeping the incoming changes (from main/master)
         while [ -f .git/rebase-apply/applying ] || [ -d .git/rebase-apply ] || [ -d .git/rebase-merge ]; do
             print_info "Resolving conflicts by accepting all changes from $MAIN_BRANCH..."
             
@@ -245,7 +245,7 @@ else
             CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
             
             if [ -n "$CONFLICT_FILES" ]; then
-                # For each conflict file, accept the incoming version (from master/main)
+                # For each conflict file, accept the incoming version (from main/master)
                 echo "$CONFLICT_FILES" | while read -r file; do
                     print_info "Resolving conflict in: $file"
                     git checkout --theirs "$file"
