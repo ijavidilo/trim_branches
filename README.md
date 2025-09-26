@@ -80,9 +80,38 @@ chmod +x trim_branches.sh
 ./trim_branches.sh --version  # Show version
 ```
 
+## 📄 Example Output
+
+```bash
+$ ./trim_branches.sh https://github.com/team/project ghp_token123
+
+[INFO] Starting branch synchronization process
+[INFO] Git Host: github.com
+[INFO] Repository: team/project
+[INFO] Main branch detected: master
+[INFO] Development branch detected: development
+[INFO] Commits in master not in development: 5
+[INFO] Creating branch feature/trim_branches from development...
+[INFO] Rebasing master onto feature/trim_branches...
+[INFO] Preserving original commit dates and authorship...
+[SUCCESS] All conflicts resolved automatically with rebase strategy
+[INFO] Pushing branch feature/trim_branches...
+[SUCCESS] Pull Request created successfully!
+[SUCCESS] URL: https://github.com/team/project/pull/42
+
+=== FINAL SUMMARY ===
+Repository: team/project
+Main branch: master
+Development branch: development  
+Feature branch: feature/trim_branches
+Commits synchronized: 5
+Pull Request: https://github.com/team/project/pull/42
+=============================
+```
+
 ## ✨ Features
 
-- 🎯 **Interactive mode** - User-friendly prompts (NEW!)
+- 🎯 **Interactive mode** - User-friendly prompts with validation
 - 🔍 **Smart branch detection** - Auto-detects `main`/`master` and `development`/`develop`/`dev`
 - ✅ **URL validation** - Validates GitHub URLs and tokens
 - 🛡️ **Works with protected branches**
@@ -90,7 +119,9 @@ chmod +x trim_branches.sh
 - 📤 **Creates Pull Request automatically**
 - 🌐 **Compatible with GitHub.com and GitHub Enterprise**
 - 🧹 **Automatic cleanup of temporary files**
-- 🎨 **Colorized output** - Clear visual feedback
+- 🎨 **Colorized output** - Clear visual feedback with final summary
+- 📅 **Preserves commit dates** - Maintains original authorship and commit timestamps
+- 🔧 **Non-interactive git operations** - Prevents editor prompts during automation
 - ✅ **Cross-platform** (Windows, macOS, Linux)
 
 ## 🔧 Parameters
@@ -112,17 +143,41 @@ chmod +x trim_branches.sh
 2. 🔍 Auto-detects main branch (main/master)
 3. 🌿 Auto-detects development branch (development/develop/dev)
 4. 🌱 Creates temporary branch from development
-5. 🔄 Applies commits from main → temporary branch
-6. ✅ Resolves conflicts automatically
-7. 📤 Push and creates Pull Request
-8. 🧹 Cleans up temporary files
+5. 🔄 Applies commits from main → temporary branch (preserving original dates)
+6. ✅ Resolves conflicts automatically (favoring main branch changes)
+7. 📤 Push and creates Pull Request with detailed summary
+8. 🎨 Shows colorized final summary with all details
+9. 🧹 Cleans up temporary files
 ```
 
 ## 💡 Special Cases
 
-- **Branches without common history**: Handled automatically
-- **Conflicts**: Resolved by prioritizing the main branch
+- **Branches without common history**: Handled automatically using merge strategy
+- **Conflicts**: Resolved automatically by prioritizing the main branch changes
 - **Multiple executions**: Recreates the branch if it already exists
+- **Commit history preservation**: Original commit dates and authorship are maintained
+- **Large repositories**: Efficient handling with smart branch detection and minimal cloning
+
+## 🔧 Technical Details
+
+### 📅 Commit Date Preservation
+The script uses `--committer-date-is-author-date` during rebase operations to ensure:
+- ✅ Original commit timestamps are preserved
+- ✅ Author information remains intact  
+- ✅ Historical timeline is maintained accurately
+- ✅ No confusion about when changes were actually made
+
+### 🤖 Automatic Conflict Resolution
+When conflicts occur during synchronization:
+- Uses `-X theirs` strategy to favor main branch changes
+- Automatically resolves file conflicts without manual intervention
+- Preserves the intent of main branch updates
+- Continues rebase process seamlessly
+
+### 🎨 Enhanced Output
+- **Colorized messages**: Info (blue), success (green), warnings (yellow), errors (red)
+- **Detailed final summary**: Repository info, branches, commit count, PR link
+- **Progress indicators**: Clear status at each step of the process
 
 ## 🚨 Common Errors
 
