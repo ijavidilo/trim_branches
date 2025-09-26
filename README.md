@@ -12,7 +12,10 @@
 curl -O https://raw.githubusercontent.com/ijavidilo/trim_branches/main/trim_branches.sh
 chmod +x trim_branches.sh
 
-# 2. Run with your repository
+# 2. Run with your repository (Interactive mode - NEW!)
+./trim_branches.sh -i
+
+# 3. Or run with direct parameters
 ./trim_branches.sh https://github.com/your-user/your-repo.git ghp_your_token_here
 ```
 
@@ -26,11 +29,12 @@ chmod +x trim_branches.sh
 **Solution**: Automatically creates a temporary branch and Pull Request
 
 1. 📥 Clones your repository
-2. 🔍 Detects if you use `main` or `master`
-3. 🌿 Creates temporary branch from `development`
-4. 🔄 Syncs commits from `main` → temporary branch
-5. 📤 Push and creates Pull Request automatically
-6. 🧹 Cleans up temporary files
+2. 🔍 Auto-detects main branch (`main` or `master`)
+3. 🌿 Auto-detects development branch (`development`, `develop`, or `dev`)
+4. 🌱 Creates temporary branch from development
+5. 🔄 Syncs commits from main → temporary branch
+6. 📤 Push and creates Pull Request automatically
+7. 🧹 Cleans up temporary files
 
 ## 📋 Requirements
 
@@ -47,32 +51,46 @@ chmod +x trim_branches.sh
 
 ## 💡 Usage
 
-### Basic syntax:
+### 🎯 Interactive Mode (Recommended - NEW!)
 ```bash
-./trim_branches.sh <repo_url> <token>
+# Interactive mode - asks for URL and token
+./trim_branches.sh -i
+
+# Interactive with custom branch
+./trim_branches.sh -i feature/my-sync
+
+# Interactive with all options
+./trim_branches.sh -i feature/sync "My Name" "my@email.com"
 ```
 
-### Examples:
-
+### 📝 Direct Parameters Mode
 ```bash
-# Basic (recommended)
+# Basic syntax
+./trim_branches.sh <repo_url> <token>
+
+# Examples
 ./trim_branches.sh https://github.com/my-team/project.git ghp_1234567890
-
-# With custom branch
 ./trim_branches.sh https://github.com/my-team/project.git ghp_1234567890 feature/my-sync
-
-# With specific configuration
 ./trim_branches.sh https://github.com/my-team/project.git ghp_1234567890 feature/sync "My Name" "my@email.com"
+```
+
+### 📋 Other Options
+```bash
+./trim_branches.sh --help     # Show help
+./trim_branches.sh --version  # Show version
 ```
 
 ## ✨ Features
 
-- 🔍 **Automatic detection** of `main` or `master`
+- 🎯 **Interactive mode** - User-friendly prompts (NEW!)
+- 🔍 **Smart branch detection** - Auto-detects `main`/`master` and `development`/`develop`/`dev`
+- ✅ **URL validation** - Validates GitHub URLs and tokens
 - 🛡️ **Works with protected branches**
 - 🔄 **Automatic conflict resolution**
 - 📤 **Creates Pull Request automatically**
 - 🌐 **Compatible with GitHub.com and GitHub Enterprise**
 - 🧹 **Automatic cleanup of temporary files**
+- 🎨 **Colorized output** - Clear visual feedback
 - ✅ **Cross-platform** (Windows, macOS, Linux)
 
 ## 🔧 Parameters
@@ -91,12 +109,13 @@ chmod +x trim_branches.sh
 
 ```
 1. 📥 Clones repository
-2. 🔍 Detects main branch (main/master)
-3. 🌿 Creates branch from development
-4. 🔄 Applies commits from main → temporary branch
-5. ✅ Resolves conflicts automatically
-6. 📤 Push and creates Pull Request
-7. 🧹 Cleans up temporary files
+2. 🔍 Auto-detects main branch (main/master)
+3. 🌿 Auto-detects development branch (development/develop/dev)
+4. 🌱 Creates temporary branch from development
+5. 🔄 Applies commits from main → temporary branch
+6. ✅ Resolves conflicts automatically
+7. 📤 Push and creates Pull Request
+8. 🧹 Cleans up temporary files
 ```
 
 ## 💡 Special Cases
@@ -131,11 +150,11 @@ chmod +x trim_branches.sh
 
 ### 🌿 Development branch doesn't exist
 ```bash
-[INFO] Branch 'development' does not exist
+[ERROR] Development branch not found (development/develop/dev)
 ```
-**Solution**: Create the development branch:
+**Solution**: Create a development branch:
 ```bash
-git checkout -b development
+git checkout -b development  # or 'develop' or 'dev'
 git push origin development
 ```
 

@@ -3,8 +3,9 @@
 # Git Branch Synchronization Script
 # Script to sync main/master commits onto development branch when both are protected
 # Creates feature branch from development and rebases main/master to maintain coherent history
+# Supports multiple development branch names: development, develop, dev
 # 
-# Version: 1.0.0
+# Version: 1.2.0
 # Author: ijavidilo
 # License: MIT
 # 
@@ -13,7 +14,10 @@
 set -e  # Exit on any error
 
 # Script version
-VERSION="1.1.0"
+VERSION="1.2.0"
+
+# Global variables
+INTERACTIVE_MODE=false
 
 # Colors for output
 RED='\033[0;31m'
@@ -50,7 +54,8 @@ show_version() {
 show_help() {
     show_version
     echo ""
-    echo "Usage: $0 <repository_url> <personal_access_token> [feature_branch_name] [git_user_name] [git_user_email]"
+    echo "Usage: $0 [OPTIONS] <repository_url> <personal_access_token> [feature_branch_name] [git_user_name] [git_user_email]"
+    echo "   or: $0 -i [feature_branch_name] [git_user_name] [git_user_email]"
     echo ""
     echo "Parameters:"
     echo "  repository_url        Git repository URL (supports GitHub.com and GitHub Enterprise)"
@@ -60,16 +65,66 @@ show_help() {
     echo "  git_user_email        Git user email (optional, uses global git config if not provided)"
     echo ""
     echo "Options:"
+    echo "  -i, --interactive     Interactive mode - prompts for repository URL and token"
     echo "  --help, -h            Show this help message"
     echo "  --version, -v         Show version information"
     echo ""
     echo "Examples:"
     echo "  $0 https://github.com/owner/repo.git ghp_xxxxxxxxxxxx"
-    echo "  $0 https://github.enterprise.com/owner/repo.git ghp_xxxxxxxxxxxx feature/sync-branches"
+    echo "  $0 -i"
+    echo "  $0 --interactive feature/my-branch"
     echo "  $0 https://github.enterprise.com/owner/repo.git ghp_xxxxxxxxxxxx feature/sync-branches \"John Doe\" \"john.doe@company.com\""
 }
 
-# Handle special arguments
+# Function to validate GitHub repository URL
+validate_github_url() {
+    local url="$1"
+    
+    # Check if URL is empty
+    if [ -z "$url" ]; then
+        return 1
+    fi
+    
+    # Check if URL starts with http:// or https://
+    if [[ ! "$url" =~ ^https?:// ]]; then
+        print_error "URL must start with http:// or https://"
+        return 1
+    fi
+    
+    # Check if URL contains github (github.com or github enterprise)
+    if [[ ! "$url" =~ github ]]; then
+        print_error "URL must be a GitHub repository (github.com or GitHub Enterprise)"
+        return 1
+    fi
+    
+    # Check basic URL structure for repository pattern (with or without .git)
+    if [[ ! "$url" =~ /[^/]+/[^/]+(/|\.git)?$ ]]; then
+        print_error "URL should follow pattern: https://github.com/owner/repository"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Function to read input with prompt
+read_input() {
+    local prompt="$1"
+    local is_secret="${2:-false}"
+    local value=""
+    
+    if [ "$is_secret" = "true" ]; then
+        echo -n "$prompt >> " >&2
+        read -s value
+        echo "" >&2  # New line after hidden input
+    else
+        echo -n "$prompt >> " >&2
+        read value
+    fi
+    
+    echo "$value"
+}
+
+# Handle special arguments and interactive mode
 case "${1:-}" in
     --help|-h)
         show_help
@@ -79,20 +134,94 @@ case "${1:-}" in
         show_version
         exit 0
         ;;
+    -i|--interactive)
+        INTERACTIVE_MODE=true
+        # Shift parameters to handle optional ones after -i
+        shift
+        ;;
 esac
 
-# Verify parameters
-if [ $# -lt 2 ]; then
-    print_error "Missing required parameters"
-    show_help
-    exit 1
+# Handle parameters based on mode
+if [ "$INTERACTIVE_MODE" = true ]; then
+    print_info "Interactive mode enabled"
+    echo ""
+    echo "Please provide the following required information:"
+    echo ""
+    
+    # Get repository URL with validation
+    echo "1. Repository URL (supports GitHub.com and GitHub Enterprise)"
+    echo "   Examples: https://github.com/owner/repo.git"
+    echo "             https://github.enterprise.com/owner/repo.git"
+    echo ""
+    
+    while true; do
+        REPO_URL=$(read_input "Enter repository URL")
+        if validate_github_url "$REPO_URL"; then
+            break
+        fi
+        echo "" >&2
+        print_error "Please enter a valid GitHub repository URL" >&2
+        echo "" >&2
+    done
+    echo ""
+    
+    # Get Personal Access Token with validation
+    echo "2. Personal Access Token for authentication"
+    echo "   Note: Your input will be hidden for security"
+    echo "   Token needs 'repo' permissions for the repository"
+    echo "   GitHub tokens usually start with 'ghp_', 'github_pat_', or 'gho_'"
+    echo ""
+    
+    while true; do
+        PAT=$(read_input "Enter Personal Access Token" true)
+        if [ -z "$PAT" ]; then
+            print_error "Personal Access Token is required" >&2
+            echo "" >&2
+            continue
+        fi
+        
+        # Basic token format validation
+        if [ ${#PAT} -lt 10 ]; then
+            print_error "Token seems too short. GitHub tokens are usually longer." >&2
+            echo "" >&2
+            continue
+        fi
+        
+        break
+    done
+    
+    # Optional parameters from command line after -i
+    FEATURE_BRANCH="${1:-feature/trim_branches}"
+    GIT_USER_NAME_PARAM="$2"
+    GIT_USER_EMAIL_PARAM="$3"
+    
+    echo ""
+else
+    # Verify parameters in non-interactive mode
+    if [ $# -lt 2 ]; then
+        print_error "Missing required parameters"
+        show_help
+        exit 1
+    fi
+    
+    REPO_URL="$1"
+    PAT="$2"
+    FEATURE_BRANCH="${3:-feature/trim_branches}"
+    GIT_USER_NAME_PARAM="$4"
+    GIT_USER_EMAIL_PARAM="$5"
+    
+    # Validate repository URL in non-interactive mode
+    if ! validate_github_url "$REPO_URL"; then
+        print_error "Invalid repository URL provided"
+        exit 1
+    fi
+    
+    # Basic validation for PAT in non-interactive mode
+    if [ -z "$PAT" ] || [ ${#PAT} -lt 10 ]; then
+        print_error "Invalid or missing Personal Access Token"
+        exit 1
+    fi
 fi
-
-REPO_URL="$1"
-PAT="$2"
-FEATURE_BRANCH="${3:-feature/trim_branches}"
-GIT_USER_NAME_PARAM="$4"
-GIT_USER_EMAIL_PARAM="$5"
 
 # Extract repository information
 REPO_NAME=$(basename "$REPO_URL" .git)
@@ -103,6 +232,9 @@ REPO_OWNER=$(echo "$REPO_PATH" | cut -d'/' -f1)
 REPO_FULL_NAME="$REPO_PATH"
 
 print_info "Starting branch synchronization process"
+if [ "$INTERACTIVE_MODE" = true ]; then
+    print_info "Mode: Interactive"
+fi
 print_info "Git Host: $GIT_HOST"
 print_info "Repository: $REPO_FULL_NAME"
 print_info "Feature branch: $FEATURE_BRANCH"
@@ -161,23 +293,32 @@ fi
 
 print_info "Main branch detected: $MAIN_BRANCH"
 
-# Verify development branch exists
-if ! git show-ref --verify --quiet refs/remotes/origin/development; then
-    print_error "Branch 'development' does not exist in the repository"
+# Detect development branch (development, develop, or dev)
+DEV_BRANCH=""
+if git show-ref --verify --quiet refs/remotes/origin/development; then
+    DEV_BRANCH="development"
+elif git show-ref --verify --quiet refs/remotes/origin/develop; then
+    DEV_BRANCH="develop"
+elif git show-ref --verify --quiet refs/remotes/origin/dev; then
+    DEV_BRANCH="dev"
+else
+    print_error "Development branch not found (development/develop/dev)"
     exit 1
 fi
+
+print_info "Development branch detected: $DEV_BRANCH"
 
 # Fetch all branches
 print_info "Fetching all branches..."
 git fetch --all
 
 # Check for differences between main/master and development
-print_info "Checking differences between $MAIN_BRANCH and development..."
-COMMITS_AHEAD=$(git rev-list --count origin/development..origin/$MAIN_BRANCH)
-COMMITS_BEHIND=$(git rev-list --count origin/$MAIN_BRANCH..origin/development)
+print_info "Checking differences between $MAIN_BRANCH and $DEV_BRANCH..."
+COMMITS_AHEAD=$(git rev-list --count origin/$DEV_BRANCH..origin/$MAIN_BRANCH)
+COMMITS_BEHIND=$(git rev-list --count origin/$MAIN_BRANCH..origin/$DEV_BRANCH)
 
-print_info "Commits in $MAIN_BRANCH not in development: $COMMITS_AHEAD"
-print_info "Commits in development not in $MAIN_BRANCH: $COMMITS_BEHIND"
+print_info "Commits in $MAIN_BRANCH not in $DEV_BRANCH: $COMMITS_AHEAD"
+print_info "Commits in $DEV_BRANCH not in $MAIN_BRANCH: $COMMITS_BEHIND"
 
 if [ "$COMMITS_AHEAD" -eq 0 ]; then
     print_success "Branches are already synchronized. Nothing to do."
@@ -191,12 +332,12 @@ if git show-ref --verify --quiet refs/remotes/origin/$FEATURE_BRANCH; then
 fi
 
 # Create and switch to feature branch from development
-print_info "Creating branch $FEATURE_BRANCH from development..."
-git checkout -b "$FEATURE_BRANCH" "origin/development"
+print_info "Creating branch $FEATURE_BRANCH from $DEV_BRANCH..."
+git checkout -b "$FEATURE_BRANCH" "origin/$DEV_BRANCH"
 
 # Check if branches have common history
 print_info "Checking if branches have common history..."
-MERGE_BASE=$(git merge-base "origin/$MAIN_BRANCH" "origin/development" 2>/dev/null || echo "")
+MERGE_BASE=$(git merge-base "origin/$MAIN_BRANCH" "origin/$DEV_BRANCH" 2>/dev/null || echo "")
 
 if [[ -z "$MERGE_BASE" ]]; then
     SYNC_STRATEGY="Merge (unrelated histories)"
@@ -302,17 +443,17 @@ print_info "Creating Pull Request..."
 
 # Create simple, clean PR title and body
 if [ "$COMMITS_AHEAD" -eq 1 ]; then
-    PR_TITLE="Sync $COMMITS_AHEAD commit from $MAIN_BRANCH to development"
+    PR_TITLE="Sync $COMMITS_AHEAD commit from $MAIN_BRANCH to $DEV_BRANCH"
 else
-    PR_TITLE="Sync $COMMITS_AHEAD commits from $MAIN_BRANCH to development"
+    PR_TITLE="Sync $COMMITS_AHEAD commits from $MAIN_BRANCH to $DEV_BRANCH"
 fi
 
-PR_BODY="This PR synchronizes $COMMITS_AHEAD commits from $MAIN_BRANCH to development branch.\\n\\nStrategy: $SYNC_STRATEGY\\nFeature branch: $FEATURE_BRANCH\\n\\nGenerated automatically by trim_branches.sh script."
+PR_BODY="This PR synchronizes $COMMITS_AHEAD commits from $MAIN_BRANCH to $DEV_BRANCH branch.\\n\\nStrategy: $SYNC_STRATEGY\\nFeature branch: $FEATURE_BRANCH\\n\\nGenerated automatically by trim_branches.sh script."
 
 # Create PR with curl - following GitHub API docs exactly
 API_URL="$API_BASE_URL/repos/$REPO_FULL_NAME/pulls"
 print_info "API URL: $API_URL"
-print_info "Creating PR from $FEATURE_BRANCH to development..."
+print_info "Creating PR from $FEATURE_BRANCH to $DEV_BRANCH..."
 
 # Create JSON payload exactly as specified in GitHub Enterprise docs
 PR_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
@@ -321,7 +462,7 @@ PR_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
   -H "X-GitHub-Api-Version: 2022-11-28" \
   -H "Content-Type: application/json" \
   "$API_URL" \
-  -d "{\"title\":\"$PR_TITLE\",\"body\":\"$PR_BODY\",\"head\":\"$FEATURE_BRANCH\",\"base\":\"development\"}")
+  -d "{\"title\":\"$PR_TITLE\",\"body\":\"$PR_BODY\",\"head\":\"$FEATURE_BRANCH\",\"base\":\"$DEV_BRANCH\"}")
 
 # Extract HTTP status code
 HTTP_CODE=$(echo "$PR_RESPONSE" | grep "HTTP_CODE:" | cut -d':' -f2)
@@ -331,12 +472,13 @@ print_info "HTTP Status Code: $HTTP_CODE"
 
 # Verify if PR was created successfully
 if [ "$HTTP_CODE" = "201" ]; then
-    PR_URL=$(echo "$PR_RESPONSE_BODY" | grep -o '"html_url": "[^"]*"' | cut -d'"' -f4)
+    # Extract PR URL more safely
+    PR_URL=$(echo "$PR_RESPONSE_BODY" | sed -n 's/.*"html_url": *"\([^"]*\)".*/\1/p' | head -1)
     print_success "Pull Request created successfully!"
     print_success "URL: $PR_URL"
     
-    # Get PR number
-    PR_NUMBER=$(echo "$PR_RESPONSE_BODY" | grep -o '"number": [0-9]*' | cut -d' ' -f2)
+    # Get PR number more safely
+    PR_NUMBER=$(echo "$PR_RESPONSE_BODY" | sed -n 's/.*"number": *\([0-9]*\).*/\1/p' | head -1)
     print_info "PR Number: #$PR_NUMBER"
     
 elif [ "$HTTP_CODE" = "404" ]; then
@@ -366,12 +508,13 @@ echo "  1. Review the PR: $PR_URL"
 echo "  2. Merge the PR when ready"
 echo "  3. Branch $FEATURE_BRANCH can be deleted after merge"
 
-# Show final summary
+# Show final summary with colors
 echo ""
-echo "=== FINAL SUMMARY ==="
-echo "Repository: $REPO_FULL_NAME"
-echo "Main branch: $MAIN_BRANCH"
-echo "Feature branch: $FEATURE_BRANCH"
-echo "Commits synchronized: $COMMITS_AHEAD"
-echo "Pull Request: $PR_URL"
-echo "====================="
+echo -e "${BLUE}=== ${GREEN}FINAL SUMMARY${BLUE} ===${NC}"
+echo -e "${BLUE}Repository:${NC} ${YELLOW}$REPO_FULL_NAME${NC}"
+echo -e "${BLUE}Main branch:${NC} ${YELLOW}$MAIN_BRANCH${NC}"
+echo -e "${BLUE}Development branch:${NC} ${YELLOW}$DEV_BRANCH${NC}"
+echo -e "${BLUE}Feature branch:${NC} ${YELLOW}$FEATURE_BRANCH${NC}"
+echo -e "${BLUE}Commits synchronized:${NC} ${GREEN}$COMMITS_AHEAD${NC}"
+echo -e "${BLUE}Pull Request:${NC} ${GREEN}$PR_URL${NC}"
+echo -e "${BLUE}=============================${NC}"
