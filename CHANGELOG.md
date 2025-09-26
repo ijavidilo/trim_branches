@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-09-26
+
+### Added
+- 🎯 **Interactive mode** (`-i` or `--interactive`) - User-friendly prompts for repository URL and token
+- ✅ **URL validation** - Validates GitHub repository URLs with helpful error messages
+- 🔍 **Smart development branch detection** - Auto-detects `development`, `develop`, or `dev` branches
+- 🎨 **Colorized output** - Enhanced visual feedback with colored final summary
+- 📝 **Input validation** - Validates Personal Access Token format and length
+- 🛡️ **Enhanced error handling** - Better error messages and user guidance
+
+### Changed
+- Improved user experience with clear prompts and validation
+- Enhanced final summary with colors and additional information
+- More robust JSON parsing to prevent duplicate output lines
+- Better handling of different GitHub repository URL formats
+
+### Fixed
+- Fixed issue with duplicate lines in final summary output
+- Improved prompt visibility and user input handling
+- Better error messages for invalid URLs and tokens
+
 ## [1.1.0] - 2025-09-26
 
 ### Changed
