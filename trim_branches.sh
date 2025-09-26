@@ -5,7 +5,7 @@
 # Creates feature branch from development and rebases main/master to maintain coherent history
 # Supports multiple development branch names: development, develop, dev
 # 
-# Version: 1.2.0
+# Version: 1.2.3
 # Author: ijavidilo
 # License: MIT
 # 
@@ -13,11 +13,21 @@
 
 set -e  # Exit on any error
 
+# Configure git to be non-interactive for automated operations
+export GIT_EDITOR="true"
+export GIT_MERGE_AUTOEDIT="no"
+
 # Script version
-VERSION="1.2.0"
+VERSION="1.2.3"
 
 # Global variables
 INTERACTIVE_MODE=false
+
+# Prevent interactive authentication and GUI prompts
+export GIT_TERMINAL_PROMPT=0  # Disable terminal prompts for credentials
+export GIT_ASKPASS=""  # Disable askpass program
+export SSH_ASKPASS=""  # Disable SSH askpass
+export DISPLAY=""  # Disable X11 display to prevent GUI prompts
 
 # Colors for output
 RED='\033[0;31m'
@@ -257,6 +267,27 @@ cleanup() {
 # Setup cleanup on exit
 trap cleanup EXIT
 
+# Early token validation to prevent interactive login prompts
+print_info "Validating Personal Access Token..."
+# Build correct API URL for GitHub.com vs GitHub Enterprise
+if [ "$GIT_HOST" = "github.com" ]; then
+    EARLY_API_URL="https://api.github.com/user"
+else
+    EARLY_API_URL="https://$GIT_HOST/api/v3/user"
+fi
+
+# Test token validity before attempting clone
+EARLY_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -H "Authorization: token $PAT" "$EARLY_API_URL" 2>/dev/null)
+EARLY_HTTP_CODE=$(echo "$EARLY_RESPONSE" | grep "HTTP_CODE:" | cut -d':' -f2)
+
+if [ "$EARLY_HTTP_CODE" != "200" ]; then
+    print_error "Invalid or expired Personal Access Token (HTTP $EARLY_HTTP_CODE)"
+    print_error "This prevents interactive login prompts during clone operation"
+    print_error "Please verify your token at: https://$GIT_HOST/settings/tokens"
+    exit 1
+fi
+print_success "Token validation successful"
+
 # Clone repository
 print_info "Cloning repository..."
 # Build the authenticated URL using the original host
@@ -279,6 +310,17 @@ fi
 print_info "Configuring git with user: $GIT_USER_NAME <$GIT_USER_EMAIL>"
 git config user.name "$GIT_USER_NAME"
 git config user.email "$GIT_USER_EMAIL"
+
+# Configure git to avoid opening editor during automated operations
+git config core.editor "true"  # Use 'true' command as editor (non-interactive)
+git config merge.ours.driver "true"  # Auto-accept merge strategy
+git config advice.mergeConflict false  # Disable merge conflict advice
+
+# Prevent interactive authentication prompts and web browser login
+git config credential.helper ""  # Disable credential helper to prevent interactive prompts
+git config core.askPass ""  # Disable askpass to prevent password prompts
+git config credential.useHttpPath true  # Use HTTP path in credentials
+git config http.version HTTP/1.1  # Use HTTP/1.1 for better compatibility
 
 # Detect main branch (main or master)
 MAIN_BRANCH=""
@@ -373,9 +415,11 @@ else
     print_info "Branches have common history. Using rebase strategy..."
     print_info "Rebasing $MAIN_BRANCH onto $FEATURE_BRANCH..."
     print_info "Using 'theirs' strategy to resolve conflicts in favor of $MAIN_BRANCH changes..."
+    print_info "Preserving original commit dates and authorship..."
 
-    # Try rebase with automatic conflict resolution
-    if ! git rebase -X theirs "origin/$MAIN_BRANCH"; then
+    # Try rebase with automatic conflict resolution (non-interactive)
+    # --committer-date-is-author-date preserves original commit dates
+    if ! GIT_EDITOR=true git rebase --committer-date-is-author-date -X theirs "origin/$MAIN_BRANCH"; then
         print_warning "Rebase failed with conflicts. Attempting to resolve automatically..."
         
         # If rebase fails, resolve all conflicts by keeping the incoming changes (from main/master)
@@ -394,8 +438,8 @@ else
                 done
             fi
             
-            # Continue rebase
-            if ! git rebase --continue; then
+            # Continue rebase (non-interactive)
+            if ! GIT_EDITOR=true git rebase --continue; then
                 print_error "Failed to continue rebase even after resolving conflicts"
                 git rebase --abort
                 exit 1
@@ -518,3 +562,6 @@ echo -e "${BLUE}Feature branch:${NC} ${YELLOW}$FEATURE_BRANCH${NC}"
 echo -e "${BLUE}Commits synchronized:${NC} ${GREEN}$COMMITS_AHEAD${NC}"
 echo -e "${BLUE}Pull Request:${NC} ${GREEN}$PR_URL${NC}"
 echo -e "${BLUE}=============================${NC}"
+
+# Ensure cleanup is called explicitly
+cleanup

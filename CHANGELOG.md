@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-09-26
+
+### Added
+- 🔒 **Enhanced non-interactive authentication** - Prevents web browser login prompts completely
+- ✅ **Early token validation** - Validates PAT before cloning to avoid interactive login attempts
+- 🛡️ **Multiple security layers** - Added GIT_TERMINAL_PROMPT, GIT_ASKPASS, SSH_ASKPASS, and DISPLAY variables
+
+### Changed
+- Improved git configuration with additional credential and authentication settings
+- Enhanced token validation with early API check before repository operations
+
+### Fixed
+- Eliminated possibility of interactive web browser authentication popups
+- Prevented credential helper and askpass prompts during automated operations
+
+## [1.2.2] - 2025-09-26
+
+### Fixed
+- 🧹 **Improved cleanup reliability** - Added explicit cleanup call at script end to ensure temporary directories are always removed
+- Fixed issue where temporary working directories could remain after script execution
+
+## [1.2.1] - 2025-09-26
+
+### Added
+- 📅 **Commit date preservation** - Maintains original commit timestamps and authorship during rebase operations
+- 🔧 **Non-interactive git operations** - Prevents editor prompts during automated git operations
+
+### Changed
+- Enhanced rebase operations to preserve original commit dates using `--committer-date-is-author-date`
+- Improved git configuration to prevent interactive editor prompts during automation
+
+### Fixed
+- Fixed rebase continue command that was incorrectly using `--committer-date-is-author-date` flag
+- Resolved issue where commits would show current date instead of original commit date
+- Improved conflict resolution process during rebase operations
+
 ## [1.2.0] - 2025-09-26
 
 ### Added
