@@ -271,7 +271,15 @@ git push -u origin "$FEATURE_BRANCH"
 
 # Test API connectivity first
 print_info "Testing API connectivity..."
-API_TEST_URL="https://$GIT_HOST/api/v3/user"
+# Build correct API URL for GitHub.com vs GitHub Enterprise
+if [ "$GIT_HOST" = "github.com" ]; then
+    API_TEST_URL="https://api.github.com/user"
+    API_BASE_URL="https://api.github.com"
+else
+    API_TEST_URL="https://$GIT_HOST/api/v3/user"
+    API_BASE_URL="https://$GIT_HOST/api/v3"
+fi
+
 API_TEST_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -H "Authorization: token $PAT" "$API_TEST_URL")
 TEST_HTTP_CODE=$(echo "$API_TEST_RESPONSE" | grep "HTTP_CODE:" | cut -d':' -f2)
 
@@ -301,8 +309,8 @@ fi
 
 PR_BODY="This PR synchronizes $COMMITS_AHEAD commits from $MAIN_BRANCH to development branch.\\n\\nStrategy: $SYNC_STRATEGY\\nFeature branch: $FEATURE_BRANCH\\n\\nGenerated automatically by trim_branches.sh script."
 
-# Create PR with curl - following GitHub Enterprise API docs exactly
-API_URL="https://$GIT_HOST/api/v3/repos/$REPO_FULL_NAME/pulls"
+# Create PR with curl - following GitHub API docs exactly
+API_URL="$API_BASE_URL/repos/$REPO_FULL_NAME/pulls"
 print_info "API URL: $API_URL"
 print_info "Creating PR from $FEATURE_BRANCH to development..."
 
