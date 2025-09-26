@@ -1,6 +1,20 @@
 # Git Branch Synchronization Script
 
-Automated script for synchronizing commits from the main branch (`master`/`main`) to the `development` branch when both are protected using branch protection rules.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Shell Script](https://img.shields.io/badge/Shell-Bash-green.svg)](https://www.gnu.org/software/bash/)
+[![GitHub](https://img.shields.io/badge/GitHub-Enterprise%20Compatible-blue.svg)](https://github.com/enterprise)
+
+> 🚀 **Automated script for synchronizing commits from the main branch (`master`/`main`) to the `development` branch when both are protected using branch protection rules.**
+
+## ⭐ Features
+
+- ✅ **Automatic branch detection** (`master` or `main`)
+- ✅ **GitHub.com and GitHub Enterprise support**
+- ✅ **Automatic conflict resolution** with configurable strategies
+- ✅ **Pull Request creation** via GitHub API
+- ✅ **Comprehensive logging** and error handling
+- ✅ **Protected branch workflow** compliance
+- ✅ **Cross-platform compatibility** (Windows, macOS, Linux)
 
 ## 🎯 Objective
 
@@ -127,10 +141,36 @@ If the feature branch already exists, it is automatically deleted and recreated.
 - Ensure the `development` branch exists
 - Verify that branches have content
 
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+### Development Guidelines
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add some amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Inspired by the need for efficient protected branch workflows
+- Built following GitHub Enterprise Server API best practices
+- Thanks to the open-source community for continuous inspiration
+
 ## 📞 Support
 
-For issues or improvements, contact the DevOps team or create an issue in the corresponding repository.
+If you encounter any issues or have questions:
+
+1. **Check** the [troubleshooting section](#-troubleshooting)
+2. **Search** existing issues
+3. **Create** a new issue with detailed information
 
 ---
-**Created by**: DevOps Team  
+**Created by**: [ijavidilo](https://github.com/ijavidilo)  
 **Last updated**: September 2025

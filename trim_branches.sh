@@ -1,10 +1,19 @@
 #!/bin/bash
 
+# Git Branch Synchronization Script
 # Script to sync master/main commits onto development branch when both are protected
 # Creates feature branch from development and rebases master/main to maintain coherent history
+# 
+# Version: 1.0.0
+# Author: ijavidilo
+# License: MIT
+# 
 # Usage: ./trim_branches.sh <repository_url> <personal_access_token> [branch_name]
 
 set -e  # Exit on any error
+
+# Script version
+VERSION="1.0.0"
 
 # Colors for output
 RED='\033[0;31m'
@@ -30,8 +39,17 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to show version
+show_version() {
+    echo "Git Branch Synchronization Script v$VERSION"
+    echo "Copyright (c) 2025 ijavidilo"
+    echo "Licensed under MIT License"
+}
+
 # Function to show help
 show_help() {
+    show_version
+    echo ""
     echo "Usage: $0 <repository_url> <personal_access_token> [feature_branch_name] [git_user_name] [git_user_email]"
     echo ""
     echo "Parameters:"
@@ -41,11 +59,27 @@ show_help() {
     echo "  git_user_name         Git user name (optional, uses global git config if not provided)"
     echo "  git_user_email        Git user email (optional, uses global git config if not provided)"
     echo ""
+    echo "Options:"
+    echo "  --help, -h            Show this help message"
+    echo "  --version, -v         Show version information"
+    echo ""
     echo "Examples:"
     echo "  $0 https://github.com/owner/repo.git ghp_xxxxxxxxxxxx"
     echo "  $0 https://github.enterprise.com/owner/repo.git ghp_xxxxxxxxxxxx feature/sync-branches"
     echo "  $0 https://github.enterprise.com/owner/repo.git ghp_xxxxxxxxxxxx feature/sync-branches \"John Doe\" \"john.doe@company.com\""
 }
+
+# Handle special arguments
+case "${1:-}" in
+    --help|-h)
+        show_help
+        exit 0
+        ;;
+    --version|-v)
+        show_version
+        exit 0
+        ;;
+esac
 
 # Verify parameters
 if [ $# -lt 2 ]; then
